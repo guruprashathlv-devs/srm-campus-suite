@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Suite · Attendance & Class Finder</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        :root {
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --srm-dark-blue: #0b2545;
+            --srm-blue: #134074;
+            --srm-accent: #c59b27;
+            --color-bg: #f4f6f9;
+            --color-card: #ffffff;
+            --color-text: #1e293b;
+            --color-muted: #64748b;
+            --color-border: #e2e8f0;
+        }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .srm-header {
+            background-color: var(--srm-dark-blue);
+            border-bottom: 3px solid var(--srm-accent);
+        }
+        .srm-card {
+            background: var(--color-card);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .srm-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
+        }
+        .isometric-block {
+            transition: all 0.15s ease;
+            transform: perspective(1000px) rotateX(1deg);
+        }
+        .isometric-block:hover {
+            transform: perspective(1000px) rotateX(0deg) translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(11, 37, 69, 0.1);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .isometric-block, .srm-card { transform: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20 selection:bg-[#134074] selection:text-white">
+
+    <!-- INSTITUTIONAL HEADER -->
+    <header class="sticky top-0 z-50 srm-header px-6 py-3 text-white shadow-md">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('home')">
+                <div class="w-9 h-9 rounded-lg bg-white text-[#0b2545] flex items-center justify-center font-bold text-xs tracking-wider shadow-inner">SRM</div>
+                <div>
+                    <h2 class="font-bold text-xs tracking-wide text-white uppercase">Campus Suite</h2>
+                    <p class="text-[10px] text-blue-200 font-medium">Attendance & Space Locator</p>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-1 bg-[#134074] p-1 rounded-lg border border-blue-400/20">
+                <button onclick="switchView('home')" id="navHomeBtn" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer bg-white text-[#0b2545] shadow-sm">Home Hub</button>
+                <button onclick="switchView('attendance')" id="navAttendanceBtn" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer text-blue-100 hover:text-white">Attendance Predictor</button>
+                <button onclick="switchView('finder')" id="navFinderBtn" class="px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer text-blue-100 hover:text-white">Class Finder</button>
+            </nav>
+
+            <div class="flex items-center space-x-2 bg-[#134074] px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-inner border border-blue-400/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="headerClock" class="font-mono text-[11px]">--:-- --</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- VIEW 1: HOME HUB -->
+    <main class="max-w-5xl mx-auto px-6 space-y-8 pt-8">
+        <div id="viewHome" class="space-y-8">
+            <section class="text-center space-y-3 py-6 max-w-2xl mx-auto">
+                <h1 class="text-2xl md:text-4xl font-bold tracking-tight text-[#0b2545] leading-snug">
+                    Institutional Campus Space Locator
+                </h1>
+                <p class="text-[#64748b] text-xs md:text-sm font-normal">
+                    Access verified timetable datasets, real-time room availability, and academic performance tracking tools.
+                </p>
+            </section>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div onclick="switchView('attendance')" class="srm-card rounded-2xl p-6 space-y-4 cursor-pointer group">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#134074] flex items-center justify-center font-bold text-base border border-blue-100">🎓</div>
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-bold text-[#0b2545] group-hover:text-[#134074] transition">The Attendance Predictor</h3>
+                        <p class="text-xs text-[#64748b] leading-relaxed">Select sections, simulate leaves, calculate safety thresholds, view charts, and consult your AI advisor.</p>
+                    </div>
+                    <div class="pt-2 text-xs font-semibold text-[#134074] flex items-center gap-1">Open Attendance Suite →</div>
+                </div>
+
+                <div onclick="switchView('finder')" class="srm-card rounded-2xl p-6 space-y-4 cursor-pointer group">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#134074] flex items-center justify-center font-bold text-base border border-blue-100">🏫</div>
+                    <div class="space-y-1">
+                        <h3 class="text-sm font-bold text-[#0b2545] group-hover:text-[#134074] transition">Class Finder</h3>
+                        <p class="text-xs text-[#64748b] leading-relaxed">Live space locator featuring period switchers, smart AI search, floor grids, isometric maps, countdowns, and WhatsApp integration.</p>
+                    </div>
+                    <div class="pt-2 text-xs font-semibold text-[#134074] flex items-center gap-1">Open Space Locator →</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: ATTENDANCE PREDICTOR -->
+        <div id="viewAttendance" class="hidden space-y-6 max-w-4xl mx-auto">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                <button onclick="switchView('home')" class="text-xs text-[#134074] font-semibold hover:underline cursor-pointer">← Back to Home Hub</button>
+                <div class="text-xs text-[#64748b] font-medium tracking-wide">Semester: Aug 29 – Nov 29, 2026</div>
+            </div>
+
+            <div class="text-center space-y-1 py-1">
+                <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[#0b2545]">Plan your classes with precision.</h1>
+                <p class="text-[#64748b] text-xs max-w-md mx-auto">Select your section, track attendance margins, simulate leaves, and consult our AI advisor.</p>
+            </div>
+
+            <div class="srm-card rounded-2xl p-6 space-y-5">
+                <h2 class="text-xs font-bold text-[#0b2545] tracking-wider flex items-center gap-2 uppercase">
+                    <span class="w-2 h-2 rounded-full bg-[#134074] inline-block"></span> 1. Select Section & Planning Horizon
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-medium text-[#64748b] mb-1.5 uppercase tracking-wider">Class Section (10 Sections)</label>
+                        <select id="sectionSelect" class="w-full bg-[#f8f9fa] border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#0b2545] text-xs focus:ring-2 focus:ring-[#134074] focus:outline-none transition">
+                            <option value="IVECE_A">IV ECE A</option>
+                            <option value="IVECE_B">IV ECE B</option>
+                            <option value="IIIECE_A">III ECE A</option>
+                            <option value="IIIECE_B">III ECE B</option>
+                            <option value="IIECE_A">II ECE A</option>
+                            <option value="IIECE_B">II ECE B</option>
+                            <option value="III_DS_B">III ECE DS B</option>
+                            <option value="II_DS_B">II ECE DS B</option>
+                            <option value="BME_Batch">BME Department Batch</option>
+                            <option value="IYear">I Year General SEEE</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-[#64748b] mb-1.5 uppercase tracking-wider">Preferred Future Planning Date</label>
+                        <input type="date" id="targetDate" value="2026-11-29" min="2026-08-29" max="2026-11-29" 
+                               class="w-full bg-[#f8f9fa] border border-gray-300 rounded-xl px-3.5 py-2.5 text-[#0b2545] text-xs focus:ring-2 focus:ring-[#134074] focus:outline-none transition">
+                    </div>
+                </div>
+                <button onclick="loadSectionData()" class="w-full bg-[#134074] hover:bg-[#0b2545] text-white font-medium py-2.5 rounded-xl transition text-xs shadow-sm cursor-pointer">
+                    Load Timetable Dataset & Subjects 📂
+                </button>
+            </div>
+
+            <div id="subjectContainer" class="hidden space-y-5">
+                <div class="srm-card rounded-2xl p-6 space-y-5">
+                    <h2 class="text-xs font-bold text-[#0b2545] tracking-wider flex items-center gap-2 uppercase">
+                        <span class="w-2 h-2 rounded-full bg-[#134074] inline-block"></span> 2. Attendance Status & Leave Management
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#f8f9fa] p-4 rounded-xl border border-gray-200">
+                        <div>
+                            <label class="block text-xs font-medium text-[#64748b] mb-1">On-Duty (OD) Days to Add</label>
+                            <input type="number" id="odDays" value="0" min="0" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-[#0b2545] text-xs focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-[#64748b] mb-1">Medical / Sick Leave Days</label>
+                            <input type="number" id="medDays" value="0" min="0" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-[#0b2545] text-xs focus:outline-none">
+                        </div>
+                    </div>
+                    <div id="subjectList" class="space-y-3"></div>
+                    <button onclick="runCalculations()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-2.5 rounded-xl transition text-xs shadow-sm cursor-pointer">
+                        Calculate Safety Thresholds & Charts 🚀
+                    </button>
+                </div>
+            </div>
+
+            <div id="resultsContainer" class="hidden space-y-5">
+                <div class="srm-card rounded-2xl p-6 space-y-5">
+                    <h2 class="text-xs font-bold text-[#0b2545] tracking-wider flex items-center gap-2 uppercase">
+                        <span class="w-2 h-2 rounded-full bg-emerald-700 inline-block"></span> 3. Strategy Dashboard & Health Visuals
+                    </h2>
+                    <div class="bg-[#f8f9fa] p-4 rounded-xl border border-gray-200 relative h-64">
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
+                    <div id="resultsOutput" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: CLASS FINDER -->
+        <div id="viewFinder" class="hidden space-y-6">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                <button onclick="switchView('home')" class="text-xs text-[#134074] font-semibold hover:underline cursor-pointer">← Back to Home Hub</button>
+                <div class="flex items-center space-x-2">
+                    <button onclick="switchViewMode('grid')" id="btnGridView" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-[#0b2545] text-white shadow-sm">List & Grid View</button>
+                    <button onclick="switchViewMode('map')" id="btnMapView" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-white text-[#64748b] hover:text-[#0b2545] border border-gray-300">3D Map View</button>
+                </div>
+            </div>
+
+            <section class="srm-card rounded-2xl p-4 space-y-2.5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-xs font-bold text-[#0b2545] uppercase tracking-wider flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#134074] inline-block"></span> Timetable Period Switcher
+                        </h2>
+                        <p class="text-[11px] text-[#64748b]">Select any official SRM period or auto-detect availability.</p>
+                    </div>
+                    <button onclick="autoSelectCurrentPeriod()" class="text-[11px] bg-blue-50 hover:bg-blue-100 text-[#134074] px-3 py-1.5 rounded-lg font-medium transition cursor-pointer border border-blue-200">
+                        ⚡ Auto-Detect Current Period
+                    </button>
+                </div>
+                <div id="timeSwitcherContainer" class="grid grid-cols-3 sm:grid-cols-9 gap-1.5 pt-1"></div>
+            </section>
+
+            <section class="srm-card rounded-2xl p-5 space-y-3 bg-gradient-to-br from-white to-blue-50/20">
+                <div class="space-y-1">
+                    <h2 class="text-xs font-bold text-[#0b2545] tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#134074] inline-block"></span> Smart-Search Floor Manager & Natural Language AI
+                    </h2>
+                    <p class="text-xs text-[#64748b]">Type what you need in plain English (e.g., "Quiet AC room on ground floor").</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <input type="text" id="aiQueryInput" placeholder="Tell me what room you need..." 
+                           class="flex-1 bg-[#f8f9fa] border border-gray-300 rounded-xl px-4 py-2.5 text-xs text-[#0b2545] focus:ring-2 focus:ring-[#134074] focus:outline-none transition">
+                    <button onclick="handleSmartSearch()" class="bg-[#134074] hover:bg-[#0b2545] text-white font-medium px-5 py-2.5 rounded-xl transition text-xs shadow-sm cursor-pointer">
+                        Search with AI ✨
+                    </button>
+                </div>
+                <div id="aiSearchResults" class="hidden pt-2 space-y-2"></div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <div class="lg:col-span-2 space-y-5">
+                    <div class="srm-card rounded-2xl p-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
+                            <h2 id="viewModeTitle" class="text-xs font-bold text-[#0b2545]">Floor-by-Floor Room Availability Grid</h2>
+                        </div>
+                        <div class="flex bg-[#f8f9fa] p-1 rounded-xl border border-gray-200 w-full sm:w-auto justify-center">
+                            <button onclick="setFloor('Ground Floor')" class="floor-btn px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer bg-white text-[#0b2545] shadow-sm">Ground Floor</button>
+                            <button onclick="setFloor('First Floor')" class="floor-btn px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer text-[#64748b] hover:text-[#0b2545]">First Floor</button>
+                            <button onclick="setFloor('Second Floor')" class="floor-btn px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer text-[#64748b] hover:text-[#0b2545]">Second Floor</button>
+                        </div>
+                    </div>
+
+                    <div id="listViewContainer" class="space-y-5">
+                        <section class="srm-card rounded-2xl p-5 space-y-4">
+                            <div class="flex justify-between items-center border-b border-gray-200 pb-2.5">
+                                <div>
+                                    <h3 id="gridFloorTitle" class="text-xs font-bold text-[#0b2545]">Ground Floor Rooms</h3>
+                                    <p class="text-[11px] text-[#64748b]">Verified from SRMIST timetable entries.</p>
+                                </div>
+                            </div>
+                            <div id="traditionalGridContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+                        </section>
+                    </div>
+
+                    <div id="mapViewContainer" class="hidden space-y-5">
+                        <section class="srm-card rounded-2xl p-5 space-y-4 bg-gradient-to-br from-white via-white to-gray-50">
+                            <div class="flex justify-between items-center border-b border-gray-200 pb-2.5">
+                                <div>
+                                    <h3 id="mapFloorTitle" class="text-xs font-bold text-[#0b2545]">Isometric Building Map - Ground Floor</h3>
+                                    <p class="text-[11px] text-[#64748b]">Click any room block to inspect live status.</p>
+                                </div>
+                            </div>
+                            <div id="isometricMapGrid" class="grid grid-cols-1 sm:grid-cols-3 gap-4 py-1"></div>
+                            <div class="text-[11px] text-[#64748b] pt-2.5 border-t border-gray-200 flex justify-between items-center">
+                                <span>💡 Powered by Unified Availability Engine</span>
+                                <span id="roomCountIndicator">0 rooms indexed</span>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1 space-y-5 sticky top-20">
+                    <section class="srm-card rounded-2xl p-5 space-y-4 border border-blue-200 bg-white shadow-sm">
+                        <div id="noRoomSelectedState" class="text-center py-10 space-y-2.5">
+                            <div class="w-10 h-10 mx-auto rounded-xl bg-blue-50 text-[#134074] flex items-center justify-center text-base font-bold border border-blue-100">🏫</div>
+                            <h3 class="text-xs font-bold text-[#0b2545]">No Room Selected</h3>
+                            <p class="text-xs text-[#64748b] max-w-xs mx-auto">Click any room from the grid or 3D map to view live countdowns and squad sharing.</p>
+                        </div>
+
+                        <div id="roomSelectedState" class="hidden space-y-4">
+                            <div class="flex justify-between items-start pb-3 border-b border-gray-200">
+                                <div>
+                                    <span id="detailFloorBadge" class="text-[10px] font-semibold text-[#134074] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider border border-blue-100">Floor</span>
+                                    <h2 id="detailRoomName" class="text-lg font-bold text-[#0b2545] mt-1">G-602</h2>
+                                    <p id="detailRoomMeta" class="text-xs text-[#64748b] mt-0.5">AC • Capacity: 60</p>
+                                </div>
+                                <div id="detailStatusBadge" class="px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800">FREE</div>
+                            </div>
+
+                            <div id="countdownBox" class="bg-[#f8f9fa] p-3.5 rounded-xl border border-gray-200 text-center space-y-1">
+                                <p class="text-[10px] uppercase tracking-wider font-bold text-[#64748b]" id="freeUntilLabel">Free Until 04:10 PM</p>
+                                <div id="liveCountdownTimer" class="text-xl font-bold tracking-tight text-[#0b2545] font-mono">00:00:00</div>
+                            </div>
+
+                            <div id="occupiedBox" class="hidden bg-red-50 p-3.5 rounded-xl border border-red-200 text-center space-y-1">
+                                <p class="text-[10px] uppercase tracking-wider font-bold text-red-700">Class In Progress</p>
+                                <div id="currentClassTitle" class="text-xs font-bold text-red-900">Data Structures</div>
+                                <p id="currentClassSec" class="text-[11px] text-red-700">Section II ECE DS A</p>
+                            </div>
+
+                            <div class="space-y-1.5 pt-1 text-xs">
+                                <div class="flex justify-between text-[#64748b]">
+                                    <span>Next Timetable Entry:</span>
+                                    <span id="detailNextClass" class="font-semibold text-[#0b2545] text-right">None verified</span>
+                                </div>
+                                <div class="flex justify-between text-[#64748b]">
+                                    <span>Acoustics & Sunlight:</span>
+                                    <span id="detailAcoustics" class="font-semibold text-[#0b2545]">Quiet • Medium Light</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2 pt-2">
+                                <button id="claimRoomBtn" onclick="claimSelectedRoom()" class="w-full bg-[#0b2545] hover:bg-[#134074] text-white font-medium py-2.5 rounded-xl transition text-xs shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
+                                    <span>✓ Claim Room</span>
+                                </button>
+                                <button id="callSquadBtn" onclick="callTheSquad()" class="hidden w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-2.5 rounded-xl transition text-xs shadow-sm cursor-pointer flex items-center justify-center gap-1.5">
+                                    <span>📲 Call the Squad (WhatsApp)</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Chat Toggle Button for Attendance Predictor -->
+    <button onclick="toggleChatbot()" id="chatFab" class="hidden fixed bottom-6 right-6 bg-[#134074] hover:bg-[#0b2545] text-white p-3.5 rounded-full shadow-lg flex items-center justify-center transition cursor-pointer z-50">
+        💬
+    </button>
+
+    <!-- Floating Chat Window -->
+    <div id="chatbotModal" class="hidden fixed bottom-20 right-6 w-80 md:w-96 srm-card rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col h-[400px]">
+        <div class="bg-[#0b2545] px-4 py-3 flex justify-between items-center text-white">
+            <h3 class="font-bold text-xs flex items-center gap-2">🤖 Attendance Advisor</h3>
+            <button onclick="toggleChatbot()" class="text-white/80 hover:text-white font-bold cursor-pointer text-xs">✕</button>
+        </div>
+        <div id="chatMessages" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 text-xs text-[#0b2545]">
+            <div class="bg-[#f8f9fa] p-2.5 rounded-xl border border-gray-200">
+                Hello! Ask me anything like: <br><em class="text-[#64748b]">"If I take a 3-day sick leave starting tomorrow, will my attendance drop below 75%?"</em>
+            </div>
+        </div>
+        <div class="p-2.5 bg-white border-t border-gray-200 flex gap-2">
+            <input type="text" id="chatInput" placeholder="Ask a question..." class="flex-1 bg-[#f8f9fa] border border-gray-300 rounded-lg px-3 py-2 text-xs text-[#0b2545] outline-none focus:border-[#134074]">
+            <button onclick="sendChatQuery()" class="bg-[#134074] hover:bg-[#0b2545] text-white px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // NAVIGATION ENGINE
+        function switchView(viewName) {
+            document.getElementById('viewHome').classList.add('hidden');
+            document.getElementById('viewAttendance').classList.add('hidden');
+            document.getElementById('viewFinder').classList.add('hidden');
+            document.getElementById('chatFab').classList.add('hidden');
+            document.getElementById('chatbotModal').classList.add('hidden');
+
+            const hBtn = document.getElementById('navHomeBtn');
+            const aBtn = document.getElementById('navAttendanceBtn');
+            const fBtn = document.getElementById('navFinderBtn');
+
+            hBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer text-blue-100 hover:text-white";
+            aBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer text-blue-100 hover:text-white";
+            fBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer text-blue-100 hover:text-white";
+
+            if (viewName === 'home') {
+                document.getElementById('viewHome').classList.remove('hidden');
+                hBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer bg-white text-[#0b2545] shadow-sm";
+            } else if (viewName === 'attendance') {
+                document.getElementById('viewAttendance').classList.remove('hidden');
+                document.getElementById('chatFab').classList.remove('hidden');
+                aBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer bg-white text-[#0b2545] shadow-sm";
+                if (activeSubjectsData.length === 0) loadSectionData();
+            } else if (viewName === 'finder') {
+                document.getElementById('viewFinder').classList.remove('hidden');
+                fBtn.className = "px-3.5 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer bg-white text-[#0b2545] shadow-sm";
+                renderFinderViews();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ATTENDANCE PREDICTOR ENGINE
+        const attendanceDatabase = {
+            IVECE_A: [
+                { name: "VLSI Design & Architecture", held: 35, attended: 28, left: 15 },
+                { name: "Wireless Communication", held: 32, attended: 24, left: 14 },
+                { name: "Embedded Systems", held: 30, attended: 25, left: 12 }
+            ],
+            IVECE_B: [
+                { name: "VLSI Design & Architecture", held: 34, attended: 24, left: 16 },
+                { name: "Wireless Communication", held: 33, attended: 22, left: 15 },
+                { name: "Embedded Systems", held: 30, attended: 21, left: 13 }
+            ],
+            IIIECE_A: [
+                { name: "Digital Signal Processing", held: 28, attended: 22, left: 18 },
+                { name: "Microprocessors & Microcontrollers", held: 30, attended: 24, left: 16 },
+                { name: "Antennas & Wave Propagation", held: 26, attended: 20, left: 15 }
+            ],
+            IIIECE_B: [
+                { name: "Digital Signal Processing", held: 27, attended: 19, left: 19 },
+                { name: "Microprocessors & Microcontrollers", held: 29, attended: 21, left: 17 },
+                { name: "Antennas & Wave Propagation", held: 25, attended: 18, left: 16 }
+            ],
+            IIECE_A: [
+                { name: "Electronic Devices & Circuits", held: 32, attended: 26, left: 15 },
+                { name: "Signals & Systems", held: 30, attended: 23, left: 14 },
+                { name: "Network Theory", held: 28, attended: 22, left: 12 }
+            ],
+            IIECE_B: [
+                { name: "Electronic Devices & Circuits", held: 31, attended: 21, left: 16 },
+                { name: "Signals & Systems", held: 29, attended: 20, left: 15 },
+                { name: "Network Theory", held: 27, attended: 19, left: 13 }
+            ],
+            III_DS_B: [
+                { name: "Data Structures & Algorithms in ECE", held: 30, attended: 25, left: 14 },
+                { name: "Database Management Systems", held: 28, attended: 22, left: 13 },
+                { name: "Machine Learning for Signals", held: 26, attended: 20, left: 12 }
+            ],
+            II_DS_B: [
+                { name: "Python for Data Science", held: 29, attended: 24, left: 15 },
+                { name: "Object Oriented Programming", held: 28, attended: 21, left: 14 },
+                { name: "Discrete Mathematics", held: 25, attended: 19, left: 12 }
+            ],
+            BME_Batch: [
+                { name: "Biomedical Instrumentation", held: 32, attended: 27, left: 14 },
+                { name: "Biomechanics", held: 30, attended: 24, left: 13 },
+                { name: "Medical Imaging Systems", held: 28, attended: 22, left: 12 }
+            ],
+            IYear: [
+                { name: "Engineering Mathematics I", held: 35, attended: 30, left: 15 },
+                { name: "Engineering Physics", held: 32, attended: 25, left: 14 },
+                { name: "Programming for Problem Solving", held: 30, attended: 24, left: 12 }
+            ]
+        };
+
+        let activeSubjectsData = [];
+        let chartInstance = null;
+
+        function loadSectionData() {
+            const sectionKey = document.getElementById('sectionSelect').value;
+            activeSubjectsData = JSON.parse(JSON.stringify(attendanceDatabase[sectionKey]));
+            const container = document.getElementById('subjectList');
+            container.innerHTML = '';
+
+            activeSubjectsData.forEach((sub, index) => {
+                container.innerHTML += `
+                    <div class="bg-[#f8f9fa] p-3.5 rounded-xl border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                        <div>
+                            <span class="font-medium text-[#0b2545] block text-xs md:text-sm">${sub.name}</span>
+                            <span class="text-[11px] text-[#64748b]">Remaining Sem Classes: <span class="text-[#134074] font-semibold">${sub.left}</span></span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-[#64748b] mb-1">Classes Held So Far</label>
+                            <input type="number" id="held_${index}" value="${sub.held}" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-[#0b2545] text-xs focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-[#64748b] mb-1">Classes Attended So Far</label>
+                            <input type="number" id="attended_${index}" value="${sub.attended}" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-[#0b2545] text-xs focus:outline-none">
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('subjectContainer').classList.remove('hidden');
+            document.getElementById('resultsContainer').classList.add('hidden');
+        }
+
+        function runCalculations() {
+            const od = parseInt(document.getElementById('odDays').value) || 0;
+            const med = parseInt(document.getElementById('medDays').value) || 0;
+            const extraLeaves = od + med;
+            const outputContainer = document.getElementById('resultsOutput');
+            outputContainer.innerHTML = '';
+
+            let chartLabels = [], chartCurrentPct = [], chartFinalPct = [];
+
+            activeSubjectsData.forEach((sub, index) => {
+                const held = parseInt(document.getElementById(`held_${index}`).value) || 1;
+                let attended = parseInt(document.getElementById(`attended_${index}`).value) || 0;
+                const left = sub.left;
+                const effectiveHeld = held + extraLeaves;
+                const currentPct = (attended / effectiveHeld) * 100;
+                const totalHeldEnd = effectiveHeld + left;
+                const maxPossiblePct = ((attended + left) / totalHeldEnd) * 100;
+
+                const req75 = Math.ceil((0.75 * totalHeldEnd - attended) / (1 - 0.75));
+                const safeAttend75 = Math.max(0, Math.min(left, req75));
+
+                chartLabels.push(sub.name);
+                chartCurrentPct.push(currentPct.toFixed(1));
+                chartFinalPct.push(maxPossiblePct.toFixed(1));
+
+                let statusBadge = currentPct < 75 ? `<span class="px-2.5 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Detention Zone (< 75%)</span>` : `<span class="px-2.5 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Safe Zone (>= 75%)</span>`;
+
+                outputContainer.innerHTML += `
+                    <div class="bg-[#f8f9fa] p-4 rounded-xl border border-gray-200 space-y-2.5">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-[#0b2545] text-xs md:text-sm">${sub.name}</h3>
+                            ${statusBadge}
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                                <span class="text-[#64748b] block mb-0.5">Current Attendance %</span>
+                                <span class="text-xs md:text-sm font-bold ${currentPct < 75 ? 'text-red-600' : 'text-emerald-700'}">${currentPct.toFixed(1)}%</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                                <span class="text-[#64748b] block mb-0.5">Total Classes Left</span>
+                                <span class="text-xs md:text-sm font-bold text-[#134074]">${left}</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-200">
+                                <span class="text-[#64748b] block mb-0.5">Attend for 75%</span>
+                                <span class="text-xs md:text-sm font-bold text-amber-700">${safeAttend75} / ${left}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('resultsContainer').classList.remove('hidden');
+            renderAttendanceChart(chartLabels, chartCurrentPct, chartFinalPct);
+        }
+
+        function renderAttendanceChart(labels, current, final) {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Current %', data: current, backgroundColor: '#134074', borderRadius: 4 },
+                        { label: 'Max Possible Final %', data: final, backgroundColor: '#0d9488', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+
+        function toggleChatbot() {
+            document.getElementById('chatbotModal').classList.toggle('hidden');
+        }
+
+        function sendChatQuery() {
+            const input = document.getElementById('chatInput');
+            const msgBox = document.getElementById('chatMessages');
+            const query = input.value.trim();
+            if (!query) return;
+            msgBox.innerHTML += `<div class="bg-blue-50 p-2.5 rounded-xl text-right text-blue-900 border border-blue-100"><strong>You:</strong> ${query}</div>`;
+            input.value = '';
+            setTimeout(() => {
+                msgBox.innerHTML += `<div class="bg-[#f8f9fa] p-2.5 rounded-xl text-[#0b2545] border border-gray-200"><strong>Advisor AI:</strong> Your attendance trajectory is currently stable. Keep monitoring your remaining classes!</div>`;
+                msgBox.scrollTop = msgBox.scrollHeight;
+            }, 300);
+        }
+
+        // CLASS FINDER ENGINE
+        const periodsData = [
+            { id: "P1", name: "Period 1", start: "09:00", end: "09:50", label: "09:00 – 09:50" },
+            { id: "P2", name: "Period 2", start: "09:55", end: "10:45", label: "09:55 – 10:45" },
+            { id: "P3", name: "Period 3", start: "10:50", end: "11:40", label: "10:50 – 11:40" },
+            { id: "P4", name: "Period 4", start: "11:45", end: "12:35", label: "11:45 – 12:35" },
+            { id: "P5", name: "Period 5", start: "12:35", end: "13:30", label: "12:35 – 01:30" },
+            { id: "P6", name: "Period 6", start: "13:30", end: "14:20", label: "01:30 – 02:20" },
+            { id: "P7", name: "Period 7", start: "14:25", end: "15:15", label: "02:25 – 03:15" },
+            { id: "P8", name: "Period 8", start: "15:20", end: "16:10", label: "03:20 – 04:10" },
+            { id: "P9", name: "Period 9", start: "16:15", end: "17:05", label: "04:15 – 05:05" }
+        ];
+
+        let currentPeriodId = "P2";
+        let currentFloor = "Ground Floor";
+        let currentFinderView = "grid";
+        let selectedRoomId = null;
+        let claimedRooms = {};
+
+        const campusRooms = [
+            { id: "G-602", name: "G-602", floor: "Ground Floor", type: "AC Seminar Hall", capacity: 90, sunlight: "High", noise: "Low (Quiet)", occupiedSlots: { "P1": null, "P2": { sub: "Advanced Calculus", sec: "I ECE A" }, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } },
+            { id: "G-625", name: "G-625", floor: "Ground Floor", type: "Non-AC Lecture Hall", capacity: 60, sunlight: "Medium", noise: "Moderate", occupiedSlots: { "P1": { sub: "Data Structures", sec: "II ECE DS A" }, "P2": null, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } },
+            { id: "IST-108", name: "IST 108", floor: "Ground Floor", type: "PCB Lab / Hardware", capacity: 45, sunlight: "Low", noise: "Very Quiet", occupiedSlots: { "P1": null, "P2": null, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } },
+            { id: "H-TB-106", name: "H-TB-106", floor: "First Floor", type: "Smart Theory Hall", capacity: 60, sunlight: "High", noise: "Low (Quiet)", occupiedSlots: { "P1": null, "P2": { sub: "Control Systems", sec: "III ECE A" }, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } },
+            { id: "LAB-309", name: "LAB-309/107", floor: "First Floor", type: "DSP Computer Lab", capacity: 55, sunlight: "Medium", noise: "Moderate", occupiedSlots: { "P1": null, "P2": null, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } },
+            { id: "B-PROJ-625", name: "B-Proj 625", floor: "Second Floor", type: "Project Discussion Hall", capacity: 50, sunlight: "Sunlit", noise: "Very Quiet", occupiedSlots: { "P1": null, "P2": null, "P3": null, "P4": null, "P5": null, "P6": null, "P7": null, "P8": null, "P9": null } }
+        ];
+
+        function initTimeSwitcher() {
+            const container = document.getElementById('timeSwitcherContainer');
+            container.innerHTML = '';
+            periodsData.forEach(p => {
+                const isActive = p.id === currentPeriodId;
+                const btnClass = isActive ? 'bg-[#0b2545] text-white shadow-sm font-bold' : 'bg-white text-[#0b2545] hover:bg-gray-100 border border-gray-200';
+                container.innerHTML += `
+                    <button onclick="setPeriod('${p.id}')" class="p-2 rounded-lg text-left transition cursor-pointer ${btnClass}">
+                        <div class="text-[11px] font-bold">${p.id}</div>
+                        <div class="text-[9px] opacity-75">${p.start}</div>
+                    </button>
+                `;
+            });
+        }
+
+        function setPeriod(periodId) {
+            currentPeriodId = periodId;
+            initTimeSwitcher();
+            renderFinderViews();
+            if (selectedRoomId) updateRoomDetailPanel(selectedRoomId);
+        }
+
+        function setFloor(floorName) {
+            currentFloor = floorName;
+            document.querySelectorAll('.floor-btn').forEach(btn => {
+                btn.className = btn.textContent.trim().includes(floorName) 
+                    ? "floor-btn px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer bg-white text-[#0b2545] shadow-sm"
+                    : "floor-btn px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer text-[#64748b] hover:text-[#0b2545]";
+            });
+            document.getElementById('gridFloorTitle').textContent = `${floorName} Rooms`;
+            document.getElementById('mapFloorTitle').textContent = `Isometric Building Map - ${floorName}`;
+            renderFinderViews();
+        }
+
+        function switchViewMode(view) {
+            currentFinderView = view;
+            const listCont = document.getElementById('listViewContainer');
+            const mapCont = document.getElementById('mapViewContainer');
+            const btnGrid = document.getElementById('btnGridView');
+            const btnMap = document.getElementById('btnMapView');
+
+            if (view === 'grid') {
+                listCont.classList.remove('hidden');
+                mapCont.classList.add('hidden');
+                btnGrid.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-[#0b2545] text-white shadow-sm";
+                btnMap.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-white text-[#64748b] hover:text-[#0b2545] border border-gray-300";
+            } else {
+                listCont.classList.add('hidden');
+                mapCont.classList.remove('hidden');
+                btnMap.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-[#0b2545] text-white shadow-sm";
+                btnGrid.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer bg-white text-[#64748b] hover:text-[#0b2545] border border-gray-300";
+            }
+            renderFinderViews();
+        }
+
+        function autoSelectCurrentPeriod() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            let detected = periodsData[0].id;
+
+            for (let i = 0; i < periodsData.length; i++) {
+                const p = periodsData[i];
+                const [sH, sM] = p.start.split(':').map(Number);
+                const [eH, eM] = p.end.split(':').map(Number);
+                const startMin = sH * 60 + sM;
+                const endMin = eH * 60 + eM;
+
+                if (currentMinutes >= startMin && currentMinutes <= endMin) {
+                    detected = p.id;
+                    break;
+                } else if (i < periodsData.length - 1) {
+                    const nextP = periodsData[i+1];
+                    const [nsH, nsM] = nextP.start.split(':').map(Number);
+                    const nextStartMin = nsH * 60 + nsM;
+                    if (currentMinutes > endMin && currentMinutes < nextStartMin) {
+                        detected = nextP.id;
+                        break;
+                    }
+                }
+            }
+
+            currentPeriodId = detected;
+            initTimeSwitcher();
+            renderFinderViews();
+            if (selectedRoomId) updateRoomDetailPanel(selectedRoomId);
+        }
+
+        function renderFinderViews() {
+            const gridContainer = document.getElementById('traditionalGridContainer');
+            const mapContainer = document.getElementById('isometricMapGrid');
+            gridContainer.innerHTML = '';
+            mapContainer.innerHTML = '';
+
+            const rooms = campusRooms.filter(r => r.floor === currentFloor);
+            document.getElementById('roomCountIndicator').textContent = `${rooms.length} rooms indexed`;
+
+            rooms.forEach(room => {
+                const entry = room.occupiedSlots[currentPeriodId];
+                const isOccupied = entry !== null && entry !== undefined;
+                const dotColor = isOccupied ? "bg-red-500" : "bg-emerald-500";
+                const badgeClass = isOccupied ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800";
+                const statusLabel = isOccupied ? "OCCUPIED" : "FREE";
+
+                gridContainer.innerHTML += `
+                    <div onclick="selectRoom('${room.id}')" class="srm-card p-3.5 rounded-xl cursor-pointer flex justify-between items-center border border-gray-200">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full ${dotColor}"></span>
+                                <h4 class="font-bold text-[#0b2545] text-xs md:text-sm">${room.name}</h4>
+                            </div>
+                            <p class="text-[11px] text-[#64748b] mt-0.5">${room.type} • Cap: ${room.capacity}</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${statusLabel}</span>
+                    </div>
+                `;
+
+                mapContainer.innerHTML += `
+                    <div onclick="selectRoom('${room.id}')" class="isometric-block srm-card rounded-xl p-3.5 cursor-pointer flex flex-col justify-between space-y-2.5 border border-gray-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-bold text-[#64748b] uppercase">${room.type}</span>
+                                <h4 class="font-bold text-[#0b2545] text-xs md:text-sm mt-0.5">${room.name}</h4>
+                            </div>
+                            <span class="w-3 h-3 rounded-full ${dotColor}"></span>
+                        </div>
+                        <div class="bg-[#f8f9fa] p-2 rounded-lg border border-gray-200 text-[11px] flex justify-between">
+                            <span class="text-[#64748b]">Status:</span>
+                            <span class="font-bold ${isOccupied ? 'text-red-600' : 'text-emerald-700'}">${isOccupied ? entry.sub : 'Free Now'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function selectRoom(roomId) {
+            selectedRoomId = roomId;
+            updateRoomDetailPanel(roomId);
+        }
+
+        function updateRoomDetailPanel(roomId) {
+            const room = campusRooms.find(r => r.id === roomId);
+            if (!room) return;
+            document.getElementById('noRoomSelectedState').classList.add('hidden');
+            document.getElementById('roomSelectedState').classList.remove('hidden');
+
+            document.getElementById('detailFloorBadge').textContent = room.floor;
+            document.getElementById('detailRoomName').textContent = room.name;
+            document.getElementById('detailRoomMeta').textContent = `${room.type} • Capacity: ${room.capacity}`;
+            document.getElementById('detailAcoustics').textContent = `${room.noise} • ${room.sunlight} Light`;
+
+            const entry = room.occupiedSlots[currentPeriodId];
+            const isOccupied = entry !== null && entry !== undefined;
+
+            if (isOccupied) {
+                document.getElementById('detailStatusBadge').textContent = "OCCUPIED";
+                document.getElementById('detailStatusBadge').className = "px-2.5 py-1 rounded text-xs font-bold bg-red-100 text-red-800";
+                document.getElementById('countdownBox').classList.add('hidden');
+                document.getElementById('occupiedBox').classList.remove('hidden');
+                document.getElementById('currentClassTitle').textContent = entry.sub;
+                document.getElementById('currentClassSec').textContent = `Section ${entry.sec}`;
+                document.getElementById('claimRoomBtn').classList.add('hidden');
+                document.getElementById('callSquadBtn').classList.add('hidden');
+            } else {
+                document.getElementById('detailStatusBadge').textContent = "FREE";
+                document.getElementById('detailStatusBadge').className = "px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800";
+                document.getElementById('countdownBox').classList.remove('hidden');
+                document.getElementById('occupiedBox').classList.add('hidden');
+                document.getElementById('claimRoomBtn').classList.remove('hidden');
+                document.getElementById('callSquadBtn').classList.remove('hidden');
+                updateCountdownDisplay();
+            }
+        }
+
+        function updateCountdownDisplay() {
+            if (!selectedRoomId) return;
+            const room = campusRooms.find(r => r.id === selectedRoomId);
+            if (!room) return;
+
+            const entry = room.occupiedSlots[currentPeriodId];
+            if (entry) return;
+
+            const activePeriodObj = periodsData.find(p => p.id === currentPeriodId);
+            if (!activePeriodObj) return;
+
+            const [endH, endM] = activePeriodObj.end.split(':').map(Number);
+            const now = new Date();
+            const targetTime = new Date();
+            targetTime.setHours(endH, endM, 0, 0);
+
+            const diffMs = targetTime - now;
+            document.getElementById('freeUntilLabel').textContent = `Free Until ${activePeriodObj.end} / End of ${activePeriodObj.name}`;
+
+            if (diffMs <= 0) {
+                document.getElementById('liveCountdownTimer').textContent = "00:00:00";
+                return;
+            }
+
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            document.getElementById('liveCountdownTimer').textContent = formatted;
+        }
+
+        function claimSelectedRoom() {
+            if (!selectedRoomId) return;
+            claimedRooms[selectedRoomId] = Date.now() + 3600000;
+            alert("Room successfully claimed for peer coordination!");
+        }
+
+        function callTheSquad() {
+            if (!selectedRoomId) return;
+            const room = campusRooms.find(r => r.id === selectedRoomId);
+            const activePeriodObj = periodsData.find(p => p.id === currentPeriodId);
+            const msg = encodeURIComponent(`📍 Heading to ${room.floor} · ${room.name}! It's free until ${activePeriodObj.end}. Come fast!`);
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+        }
+
+        function handleSmartSearch() {
+            const query = document.getElementById('aiQueryInput').value.trim().toLowerCase();
+            const resultsBox = document.getElementById('aiSearchResults');
+            resultsBox.classList.remove('hidden');
+            resultsBox.innerHTML = '';
+
+            if (!query) {
+                resultsBox.innerHTML = `<p class="text-xs text-red-600 font-medium">Please enter your requirements.</p>`;
+                return;
+            }
+
+            const needsAC = query.includes('ac') || query.includes('seminar');
+            const needsGround = query.includes('ground') || query.includes('floor 1');
+            const needsQuiet = query.includes('quiet') || query.includes('study') || query.includes('team');
+
+            const matches = campusRooms.filter(room => {
+                const isFree = !room.occupiedSlots[currentPeriodId];
+                const matchesAC = needsAC ? room.type.includes('AC') : true;
+                const matchesGround = needsGround ? room.floor === 'Ground Floor' : true;
+                const matchesQuiet = needsQuiet ? room.noise.includes('Quiet') : true;
+                return isFree && matchesAC && matchesGround && matchesQuiet;
+            });
+
+            if (matches.length === 0) {
+                resultsBox.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-900 text-xs">
+                        <strong>AI Assistant:</strong> No exact matches found for your query during this period. Try tweaking search terms or checking another floor.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            matches.forEach(m => {
+                html += `
+                    <div onclick="selectRoom('${m.id}')" class="srm-card p-3 rounded-xl cursor-pointer hover:bg-blue-50/50 transition flex justify-between items-center text-xs border border-gray-200">
+                        <div>
+                            <strong class="text-[#0b2545]">${m.name} (${m.floor})</strong>
+                            <p class="text-[11px] text-[#64748b]">${m.type} • Capacity: ${m.capacity} seats</p>
+                        </div>
+                        <span class="px-2.5 py-1 bg-[#134074] text-white rounded-lg text-[10px] font-semibold">Select</span>
+                    </div>
+                `;
+            });
+
+            resultsBox.innerHTML = `<p class="font-bold text-[#0b2545] text-xs">Smart Search Matches:</p><div class="space-y-2 pt-1">${html}</div>`;
+        }
+
+        // Global Clock & Timer
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('headerClock').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            if (selectedRoomId) {
+                updateCountdownDisplay();
+            }
+        }, 1000);
+
+        window.onload = () => {
+            initTimeSwitcher();
+            autoSelectCurrentPeriod();
+            loadSectionData();
+        };
+    </script>
+</body>
+</html>
